@@ -1527,6 +1527,10 @@ class RoughGenerator {
     return this._drawable('path', paths, o);
   }
 
+  fillShape(xc, yc, o) {
+    return this.lib.hachureFillShape(xc, yc, o);
+  }
+
   _computePathSize(d) {
     let size = [0, 0];
     if (self.document) {
@@ -1669,6 +1673,10 @@ class RoughGeneratorAsync extends RoughGenerator {
     paths.push(await this.lib.svgPath(d, o));
     return this._drawable('path', paths, o);
   }
+
+  async fillShape(xc, yc, o) {
+    return await this.lib.hachureFillShape(xc, yc, o);
+  }
 }
 
 class RoughCanvas {
@@ -1775,16 +1783,47 @@ class RoughCanvas {
           break;
         }
         case 'path2Dpattern': {
-          let size = drawing.size;
-          let hcanvas = document.createElement('canvas');
-          hcanvas.width = size[0];
-          hcanvas.height = size[1];
-          this._fillSketch(hcanvas.getContext("2d"), drawing, o);
-          this.ctx.save();
-          this.ctx.fillStyle = this.ctx.createPattern(hcanvas, 'repeat');
-          let p2d = new Path2D(drawing.path);
-          this.ctx.fill(p2d);
-          this.ctx.restore();
+          {
+            let svgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            svgPath.setAttribute('d', drawing.path);
+            let totalLength = svgPath.getTotalLength();
+            let gap = o.hachureGap;
+            if (gap < 0) {
+              gap = o.strokeWidth * 4;
+            }
+            gap = Math.max(gap, 10);
+            let pcount = Math.ceil(totalLength / gap);
+            let xc = [];
+            let yc = [];
+            for (let i = 0; i < pcount; i++) {
+              let l = i * gap;
+              let p = svgPath.getPointAtLength(l);
+              if (p) {
+                let x = p.x, y = p.y;
+                if (i !== 0) {
+                  if ((x === xc[xc.length - 1]) && (y === yc[yc.length - 1])) {
+                    continue;
+                  }
+                }
+                xc.push(Math.floor(x));
+                yc.push(Math.floor(y));
+              }
+            }
+            let dr = this.gen.fillShape(xc, yc, o);
+            this._fillSketch(this.ctx, dr, o);
+            console.log({ xc, yc });
+          }
+
+          // let size = drawing.size;
+          // let hcanvas = document.createElement('canvas');
+          // hcanvas.width = size[0];
+          // hcanvas.height = size[1];
+          // this._fillSketch(hcanvas.getContext("2d"), drawing, o);
+          // this.ctx.save();
+          // this.ctx.fillStyle = this.ctx.createPattern(hcanvas, 'repeat');
+          // let p2d = new Path2D(drawing.path);
+          // this.ctx.fill(p2d);
+          // this.ctx.restore();
           break;
         }
       }

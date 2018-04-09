@@ -165,6 +165,10 @@ export class RoughGenerator {
     return this._drawable('path', paths, o);
   }
 
+  fillShape(xc, yc, o) {
+    return this.lib.hachureFillShape(xc, yc, o);
+  }
+
   _computePathSize(d) {
     let size = [0, 0];
     if (self.document) {
@@ -306,5 +310,9 @@ export class RoughGeneratorAsync extends RoughGenerator {
     }
     paths.push(await this.lib.svgPath(d, o));
     return this._drawable('path', paths, o);
+  }
+
+  async fillShape(xc, yc, o) {
+    return await this.lib.hachureFillShape(xc, yc, o);
   }
 }
